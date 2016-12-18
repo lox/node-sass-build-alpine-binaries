@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-node_sass_version=3.7.0
+node_sass_version=4.0.0
 node_versions=( 4 6 7 )
 image_name=node-sass-alpine-builder
 
@@ -31,7 +31,7 @@ dockerfile() {
 	WORKDIR /node-sass
 	COPY ./node-sass/package.json /node-sass/package.json
 	RUN npm install --verbose
-	COPY ./node-sass /node-sass
+	COPY ./node-sass /node-sass/
 	EOF
 }
 
@@ -46,19 +46,36 @@ build_docker_image() {
 
 build_node_sass() {
 	local version="$1"
+	local exact_version
+	if ! exact_version=$(docker run --rm "$image_name:${version}" node --version) ; then
+		echo "failed to get node version"
+		exit 1
+	fi
 	local volumes=(
 		"$PWD/node-sass:/node-sass"
-		"$PWD/build/${version}:/build"
+		"/node-sass/node_modules"
+		"$PWD/build/${exact_version}:/build"
 	)
-	set -x
+	echo "Building node $exact_version"
 	docker run \
 		${volumes[@]/#/-v } \
 		-it --rm "$image_name:${version}" \
 			bash -c "node scripts/build.js -f --verbose && cp -a vendor/* /build"
 }
 
+rename_build_files() {
+	find build -type f -name 'binding.node' | while read FILE ; do
+		mv "${FILE}" $(sed -e 's#linux-x64#linux_musl-x64#' <<< "$FILE" | sed -e 's#/binding#_binding#')
+		rmdir $(dirname $FILE)
+	done
+}
+
 ## Main
 ## ----------------
+
+## Output format should be like
+# * build/v4.0.0
+# * build/v4.0.0/linux_musl-x64-42_binding.node
 
 checkout_source "$node_sass_version"
 
@@ -66,3 +83,5 @@ for version in "${node_versions[@]}" ; do
 	build_docker_image "$version"
 	build_node_sass "$version"
 done
+
+rename_build_files
