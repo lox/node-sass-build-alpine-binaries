@@ -1,9 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 
-node_sass_version=4.13.0
-node_versions=( 6 8 10 11 12 13 )
+node_sass_version="4.13.0"
 image_name="node-sass-alpine-builder"
+supported_node_versions="6|8|10|11|12|13"
+
+IFS="|" expanded_versions="${supported_node_versions}"
+set -- ${1-${expanded_versions}}
+for node_major_version
+do
+	case "${node_major_version}" in
+	6|8|10|11|12|13)
+		;;
+	*)
+		echo >&2 "Node version \"${node_major_version}\" not supported"
+		exit 1
+		;;
+	esac
+done
 
 checkout_source() {
 	local node_sass_tag="v${1?need node sass version}"
@@ -82,9 +96,9 @@ rename_dist_files() {
 # * dist/v4.0.0
 # * dist/v4.0.0/linux_musl-x64-42_binding.node
 
-checkout_source "$node_sass_version"
-
-for major_node_version in "${node_versions[@]}" ; do
+checkout_source "${node_sass_version}"
+for major_node_version
+do
 	docker_image_name="${image_name}:${major_node_version}"
 	build_docker_image "${major_node_version}"
 	build_node_sass
