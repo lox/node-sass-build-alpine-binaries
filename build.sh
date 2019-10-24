@@ -38,7 +38,7 @@ dockerfile() {
 build_docker_image() {
 	local version="$1"
 	dockerfile "$version" "Dockerfile.${version}"
-	echo "Building $image_name:${version}"
+	echo "Preparing Docker image \"$image_name:${version}\""
 	docker build --tag "$image_name:${version}" -f "Dockerfile.${version}" \
 		--build-arg NODE_SASS_VERSION=${node_sass_version} .
 	rm "Dockerfile.${version}"
@@ -56,7 +56,7 @@ build_node_sass() {
 		"/node-sass/node_modules"
 		"$PWD/build/${exact_version}:/build"
 	)
-	echo "Building node $exact_version"
+	echo "Building node-sass ${node_sass_version} for node $exact_version using \"$image_name:${version}\""
 	docker run \
 		${volumes[@]/#/-v } \
 		-it --rm "$image_name:${version}" \
