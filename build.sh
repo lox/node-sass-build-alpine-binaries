@@ -55,7 +55,7 @@ run_inside_container() {
 	local volumes=(
 		"$PWD/node-sass:/node-sass"
 		"/node-sass/node_modules"
-		"$PWD/build/${running_node_version?need running node version}:/build"
+		"$PWD/dist/${running_node_version?need running node version}:/dist"
 	)
 	docker run \
 		${volumes[@]/#/-v } \
@@ -65,11 +65,11 @@ run_inside_container() {
 build_node_sass() {
 	inside_node_version
 	echo "Building node-sass ${node_sass_version} for node ${running_node_version} using \"${docker_image_name}\""
-	run_inside_container bash -c "node scripts/build.js -f --verbose && cp -a vendor/* /build"
+	run_inside_container bash -c "node scripts/build.js -f --verbose && cp -a vendor/* /dist"
 }
 
-rename_build_files() {
-	find build -type f -name 'binding.node' | while read FILE ; do
+rename_dist_files() {
+	find dist -type f -name 'binding.node' | while read FILE ; do
 		mv "${FILE}" $(sed -e 's#linux-x64#linux_musl-x64#' <<< "$FILE" | sed -e 's#/binding#_binding#')
 		rmdir $(dirname $FILE)
 	done
@@ -79,8 +79,8 @@ rename_build_files() {
 ## ----------------
 
 ## Output format should be like
-# * build/v4.0.0
-# * build/v4.0.0/linux_musl-x64-42_binding.node
+# * dist/v4.0.0
+# * dist/v4.0.0/linux_musl-x64-42_binding.node
 
 checkout_source "$node_sass_version"
 
@@ -90,4 +90,4 @@ for major_node_version in "${node_versions[@]}" ; do
 	build_node_sass
 done
 
-rename_build_files
+rename_dist_files
