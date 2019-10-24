@@ -66,8 +66,6 @@ inside_node_version() {
 
 run_inside_container() {
 	local volumes=(
-		"$PWD/node-sass:/node-sass:Z"
-		"/node-sass/node_modules"
 		"$PWD/dist/${running_node_version?need running node version}:/dist:Z"
 	)
 	docker run \
