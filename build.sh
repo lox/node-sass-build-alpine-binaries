@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-node_sass_version=4.0.0
-node_versions=( 4 6 7 )
+node_sass_version=4.13.0
+node_versions=( 6 8 10 11 12 13 )
 image_name=node-sass-alpine-builder
 
 checkout_source() {
@@ -26,7 +26,7 @@ dockerfile() {
 	cat <<- EOF > $file
 	FROM node:${version}-alpine
 	ARG NODE_SASS_VERSION
-	RUN apk add --no-cache python=2.7.12-r0 git-perl bash make gcc g++
+	RUN apk add --no-cache python=2.7.14-r0 git-perl bash make gcc g++
 	RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 	WORKDIR /node-sass
 	COPY ./node-sass/package.json /node-sass/package.json
