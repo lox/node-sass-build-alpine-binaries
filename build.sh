@@ -3,10 +3,9 @@ set -euo pipefail
 
 node_sass_version="4.13.0"
 image_name="node-sass-alpine-builder"
-supported_node_versions="6|8|10|11|12|13"
+default_node_versions="6 8 10 11 12 13"
 
-IFS="|" expanded_versions="${supported_node_versions}"
-set -- ${1-${expanded_versions}}
+set -- ${1-${default_node_versions}}
 for node_major_version
 do
 	case "${node_major_version}" in
