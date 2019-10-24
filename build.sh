@@ -3,7 +3,7 @@ set -euo pipefail
 
 node_sass_version=4.13.0
 node_versions=( 6 8 10 11 12 13 )
-image_name=node-sass-alpine-builder
+image_name="node-sass-alpine-builder"
 
 checkout_source() {
 	local version="$1"
@@ -19,12 +19,12 @@ checkout_source() {
 }
 
 dockerfile() {
-	local version="$1"
+	local base_image_name="$1"
 	local file="$2"
 
 	echo "Generating $file"
 	cat <<- EOF > $file
-	FROM node:${version}-alpine
+	FROM ${base_image_name}
 	ARG NODE_SASS_VERSION
 	RUN apk add --no-cache python=2.7.14-r0 git-perl bash make gcc g++
 	RUN rm /bin/sh && ln -s /bin/bash /bin/sh
@@ -36,31 +36,36 @@ dockerfile() {
 }
 
 build_docker_image() {
-	local version="$1"
-	dockerfile "$version" "Dockerfile.${version}"
-	echo "Preparing Docker image \"$image_name:${version}\""
-	docker build --tag "$image_name:${version}" -f "Dockerfile.${version}" \
+	base_image_name="node:${major_node_version?need major node version}-alpine"
+	dockerfile "${base_image_name}" "Dockerfile.${docker_image_name?need docker image name}"
+	echo "Preparing Docker image \"${docker_image_name}\" based on \"${base_image_name}\""
+	docker build --tag "${docker_image_name}" -f "Dockerfile.${docker_image_name}" \
 		--build-arg NODE_SASS_VERSION=${node_sass_version} .
-	rm "Dockerfile.${version}"
+	rm "Dockerfile.${docker_image_name}"
 }
 
-build_node_sass() {
-	local version="$1"
-	local exact_version
-	if ! exact_version=$(docker run --rm "$image_name:${version}" node --version) ; then
+inside_node_version() {
+	if ! running_node_version=$(docker run --rm "${docker_image_name}" node --version) ; then
 		echo "failed to get node version"
 		exit 1
 	fi
+}
+
+run_inside_container() {
 	local volumes=(
 		"$PWD/node-sass:/node-sass"
 		"/node-sass/node_modules"
-		"$PWD/build/${exact_version}:/build"
+		"$PWD/build/${running_node_version?need running node version}:/build"
 	)
-	echo "Building node-sass ${node_sass_version} for node $exact_version using \"$image_name:${version}\""
 	docker run \
 		${volumes[@]/#/-v } \
-		-it --rm "$image_name:${version}" \
-			bash -c "node scripts/build.js -f --verbose && cp -a vendor/* /build"
+		-it --rm "${docker_image_name?need docker image name}" "$@"
+}
+
+build_node_sass() {
+	inside_node_version
+	echo "Building node-sass ${node_sass_version} for node ${running_node_version} using \"${docker_image_name}\""
+	run_inside_container bash -c "node scripts/build.js -f --verbose && cp -a vendor/* /build"
 }
 
 rename_build_files() {
@@ -79,9 +84,10 @@ rename_build_files() {
 
 checkout_source "$node_sass_version"
 
-for version in "${node_versions[@]}" ; do
-	build_docker_image "$version"
-	build_node_sass "$version"
+for major_node_version in "${node_versions[@]}" ; do
+	docker_image_name="${image_name}:${major_node_version}"
+	build_docker_image "${major_node_version}"
+	build_node_sass
 done
 
 rename_build_files
