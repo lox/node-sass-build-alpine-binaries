@@ -6,14 +6,14 @@ node_versions=( 6 8 10 11 12 13 )
 image_name="node-sass-alpine-builder"
 
 checkout_source() {
-	local version="$1"
-	echo "Checking out node-sass v${version}"
+	local node_sass_tag="v${1?need node sass version}"
+	echo "Checking out node-sass ${node_sass_tag}"
 	[[ -d node-sass/.git ]] || git clone https://github.com/sass/node-sass --recursive
 	(
 	cd node-sass
 	rm -rf vendor/
 	git clean -f -d
-	git checkout "v$version"
+	git checkout "${node_sass_tag}"
 	git submodule update --init --recursive
 	)
 }
