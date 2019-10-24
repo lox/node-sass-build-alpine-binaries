@@ -26,7 +26,7 @@ dockerfile() {
 	cat <<- EOF > $file
 	FROM ${base_image_name}
 	ARG NODE_SASS_VERSION
-	RUN apk add --no-cache python=2.7.14-r0 git-perl bash make gcc g++
+	RUN apk add --no-cache 'python<3' git-perl bash make gcc g++
 	RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 	WORKDIR /node-sass
 	COPY ./node-sass/package.json /node-sass/package.json
