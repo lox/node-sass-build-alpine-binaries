@@ -1,5 +1,5 @@
 node-sass/
 node-sass/node_modules
-build/
+dist/
 Dockerfile.*
 
